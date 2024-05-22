@@ -1,0 +1,46 @@
+{
+    "general": {
+        "batch_size": 1,
+        "num_epochs": 100,
+        "learning_rate": 0.0002,
+        "beta1": 0.5,
+        "beta2": 0.999,
+        "data_path": "./data"
+    },
+    "generator": {
+        "input_dim": 100,
+        "output_channels": 3,
+        "feature_maps": 64,
+        "activation_function": "ReLU",
+        "batch_normalization": true,
+        "dropout": false,
+        "layer_type": "conv_transpose",
+        "kernel_size": 4,
+        "stride": 2,
+        "padding": 1,
+        "weight_initialization": "xavier"
+    },
+    "discriminator": {
+        "input_channels": 3,
+        "feature_maps": 64,
+        "activation_function": "LeakyReLU",
+        "batch_normalization": true,
+        "dropout": false,
+        "layer_type": "conv",
+        "kernel_size": 4,
+        "stride": 2,
+        "padding": 1,
+        "weight_initialization": "xavier"
+    },
+    "noise_adder": {
+        "noise_type": "salt_and_pepper",
+        "salt_pepper_ratio": 0.02,
+        "gaussian_mean": 0,
+        "gaussian_std": 0.02
+    },
+    "training": {
+        "loss_function": "BCE",
+        "optimizer": "Adam",
+        "gradient_clipping": false
+    }
+}

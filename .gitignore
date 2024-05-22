@@ -1,0 +1,11 @@
+// virtual environment
+.venv
+
+// note
+note.txt
+
+// VS code settings
+.vscode
+
+// dataset
+data/MNIST
