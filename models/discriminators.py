@@ -6,7 +6,7 @@ class Discriminator(nn.Module):
         layers = []
         input_channels = config['input_channels']
 
-        for layer_cfg in config['layers']:
+        for idx, layer_cfg in enumerate(config['layers']):
             if layer_cfg['type'] == 'conv':
                 layers.append(
                     nn.Conv2d(
@@ -18,8 +18,8 @@ class Discriminator(nn.Module):
                         bias=False
                     )
                 )
-                if layer_cfg['batch_normalization']:
-                    layers.append(nn.InstanceNorm2d(layer_cfg['out_channels'], affine=True))
+                if layer_cfg['batch_normalization'] and idx < len(config['layers']) - 1:
+                    layers.append(nn.BatchNorm2d(layer_cfg['out_channels']))
                 if layer_cfg['activation'] == 'LeakyReLU':
                     layers.append(nn.LeakyReLU(0.2, inplace=True))
                 elif layer_cfg['activation'] == 'Sigmoid':
