@@ -9,28 +9,112 @@
     },
     "generator": {
         "input_dim": 100,
-        "output_channels": 3,
-        "feature_maps": 64,
-        "activation_function": "ReLU",
-        "batch_normalization": true,
-        "dropout": false,
-        "layer_type": "conv_transpose",
-        "kernel_size": 4,
-        "stride": 2,
-        "padding": 1,
-        "weight_initialization": "xavier"
+        "layers": [
+            {
+                "type": "conv_transpose",
+                "out_channels": 512,
+                "kernel_size": 4,
+                "stride": 1,
+                "padding": 0,
+                "activation": "ReLU",
+                "batch_normalization": true,
+                "dropout": false,
+                "weight_initialization": "xavier"
+            },
+            {
+                "type": "conv_transpose",
+                "out_channels": 256,
+                "kernel_size": 4,
+                "stride": 2,
+                "padding": 1,
+                "activation": "ReLU",
+                "batch_normalization": true,
+                "dropout": false,
+                "weight_initialization": "xavier"
+            },
+            {
+                "type": "conv_transpose",
+                "out_channels": 128,
+                "kernel_size": 4,
+                "stride": 2,
+                "padding": 1,
+                "activation": "ReLU",
+                "batch_normalization": true,
+                "dropout": false,
+                "weight_initialization": "xavier"
+            },
+            {
+                "type": "conv_transpose",
+                "out_channels": 1,
+                "kernel_size": 4,
+                "stride": 2,
+                "padding": 1,
+                "activation": "Tanh",
+                "batch_normalization": false,
+                "dropout": false,
+                "weight_initialization": "xavier"
+            }
+        ]
     },
     "discriminator": {
-        "input_channels": 3,
-        "feature_maps": 64,
-        "activation_function": "LeakyReLU",
-        "batch_normalization": true,
-        "dropout": false,
-        "layer_type": "conv",
-        "kernel_size": 4,
-        "stride": 2,
-        "padding": 1,
-        "weight_initialization": "xavier"
+        "input_channels": 1,
+        "layers": [
+            {
+                "type": "conv",
+                "out_channels": 64,
+                "kernel_size": 4,
+                "stride": 2,
+                "padding": 1,
+                "activation": "LeakyReLU",
+                "batch_normalization": false,
+                "dropout": false,
+                "weight_initialization": "xavier"
+            },
+            {
+                "type": "conv",
+                "out_channels": 128,
+                "kernel_size": 4,
+                "stride": 2,
+                "padding": 1,
+                "activation": "LeakyReLU",
+                "batch_normalization": true,
+                "dropout": false,
+                "weight_initialization": "xavier"
+            },
+            {
+                "type": "conv",
+                "out_channels": 256,
+                "kernel_size": 4,
+                "stride": 2,
+                "padding": 1,
+                "activation": "LeakyReLU",
+                "batch_normalization": true,
+                "dropout": false,
+                "weight_initialization": "xavier"
+            },
+            {
+                "type": "conv",
+                "out_channels": 512,
+                "kernel_size": 4,
+                "stride": 2,
+                "padding": 1,
+                "activation": "LeakyReLU",
+                "batch_normalization": true,
+                "dropout": false,
+                "weight_initialization": "xavier"
+            },
+            {
+                "type": "conv",
+                "out_channels": 1,
+                "kernel_size": 4,
+                "stride": 1,
+                "padding": 0,
+                "activation": "Sigmoid",
+                "batch_normalization": false,
+                "dropout": false,
+                "weight_initialization": "xavier"
+            }
+        ]
     },
     "noise_adder": {
         "noise_type": "salt_and_pepper",

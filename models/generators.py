@@ -1,58 +1,45 @@
 import torch.nn as nn
 
-# Generator model
-import torch.nn as nn
-
 class Generator(nn.Module):
-    def __init__(self, input_dim, output_channels, feature_maps, activation_function, batch_normalization, dropout, layer_type, kernel_size, stride, padding, weight_initialization):
+    def __init__(self, config):
         super(Generator, self).__init__()
-        
         layers = []
-        in_channels = input_dim
+        input_dim = config['input_dim']
 
-        for i in range(4):
-            layers.append(self._create_layer(in_channels, feature_maps * 2 ** i, activation_function, batch_normalization, dropout, layer_type, kernel_size, stride, padding))
-            in_channels = feature_maps * 2 ** i
+        for layer_cfg in config['layers']:
+            if layer_cfg['type'] == 'conv_transpose':
+                layers.append(
+                    nn.ConvTranspose2d(
+                        in_channels=input_dim,
+                        out_channels=layer_cfg['out_channels'],
+                        kernel_size=layer_cfg['kernel_size'],
+                        stride=layer_cfg['stride'],
+                        padding=layer_cfg['padding'],
+                        bias=False
+                    )
+                )
+                if layer_cfg['batch_normalization']:
+                    layers.append(nn.InstanceNorm2d(layer_cfg['out_channels'], affine=True))
+                if layer_cfg['activation'] == 'ReLU':
+                    layers.append(nn.ReLU(inplace=True))
+                elif layer_cfg['activation'] == 'Tanh':
+                    layers.append(nn.Tanh())
+                if layer_cfg['dropout']:
+                    layers.append(nn.Dropout(0.5))
 
-        layers.append(nn.ConvTranspose2d(in_channels, output_channels, kernel_size, stride=1, padding=0))
-        layers.append(nn.Tanh())
+                input_dim = layer_cfg['out_channels']
 
         self.model = nn.Sequential(*layers)
-        
-        self._initialize_weights(weight_initialization)
-    
-    def _create_layer(self, in_channels, out_channels, activation_function, batch_normalization, dropout, layer_type, kernel_size, stride, padding):
-        layers = []
-        if layer_type == 'conv_transpose':
-            layers.append(nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride, padding))
-        else:
-            raise ValueError(f"Unsupported layer type: {layer_type}")
+        self._initialize_weights(config['layers'])
 
-        if batch_normalization:
-            layers.append(nn.BatchNorm2d(out_channels))
-        
-        if activation_function == 'ReLU':
-            layers.append(nn.ReLU(True))
-        elif activation_function == 'LeakyReLU':
-            layers.append(nn.LeakyReLU(0.2, True))
-        else:
-            raise ValueError(f"Unsupported activation function: {activation_function}")
+    def _initialize_weights(self, layers_config):
+        for layer_cfg, layer in zip(layers_config, self.model):
+            if isinstance(layer, (nn.ConvTranspose2d, nn.Conv2d)):
+                if layer_cfg['weight_initialization'] == 'xavier':
+                    nn.init.xavier_normal_(layer.weight)
 
-        if dropout:
-            layers.append(nn.Dropout(0.5))
-
-        return nn.Sequential(*layers)
-    
-    def _initialize_weights(self, initialization_type):
-        for m in self.modules():
-            if isinstance(m, (nn.ConvTranspose2d, nn.Conv2d)):
-                if initialization_type == 'xavier':
-                    nn.init.xavier_normal_(m.weight)
-                elif initialization_type == 'normal':
-                    nn.init.normal_(m.weight, 0.0, 0.02)
-                else:
-                    raise ValueError(f"Unsupported weight initialization: {initialization_type}")
-    
     def forward(self, x):
         return self.model(x)
-
+    
+    def __str__(self):
+        return f"Generator Model:\n{self.model}"

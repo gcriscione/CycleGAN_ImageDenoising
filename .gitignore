@@ -9,3 +9,6 @@ note.txt
 
 // dataset
 data/MNIST
+
+// python cache
+__pycache__/

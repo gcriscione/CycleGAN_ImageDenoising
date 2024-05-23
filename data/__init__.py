@@ -1,1 +1,1 @@
-from download_mist import download_mnist
+from .download_mist import download_mnist
