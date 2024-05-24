@@ -1,7 +1,7 @@
 {
     "general": {
         "batch_size": 1,
-        "num_epochs": 100,
+        "num_epochs": 10,
         "learning_rate": 0.0002,
         "beta1": 0.5,
         "beta2": 0.999,
@@ -12,58 +12,27 @@
         "layers": [
             {
                 "type": "conv_transpose",
-                "out_channels": 512,
-                "kernel_size": 4,
-                "stride": 1,
-                "padding": 0,
-                "activation": "ReLU",
-                "batch_normalization": false,
-                "dropout": false,
-                "weight_initialization": "xavier"
-            },
-            {
-                "type": "conv_transpose",
-                "out_channels": 256,
+                "out_channels": 32,
                 "kernel_size": 4,
                 "stride": 2,
                 "padding": 1,
-                "activation": "ReLU",
-                "batch_normalization": true,
-                "dropout": false,
-                "weight_initialization": "xavier"
+                "activation": "ReLU"
             },
             {
                 "type": "conv_transpose",
-                "out_channels": 128,
+                "out_channels": 16,
                 "kernel_size": 4,
                 "stride": 2,
                 "padding": 1,
-                "activation": "ReLU",
-                "batch_normalization": true,
-                "dropout": false,
-                "weight_initialization": "xavier"
-            },
-            {
-                "type": "conv_transpose",
-                "out_channels": 64,
-                "kernel_size": 4,
-                "stride": 2,
-                "padding": 1,
-                "activation": "ReLU",
-                "batch_normalization": false,
-                "dropout": false,
-                "weight_initialization": "xavier"
+                "activation": "ReLU"
             },
             {
                 "type": "conv_transpose",
                 "out_channels": 1,
-                "kernel_size": 3,
+                "kernel_size": 4,
                 "stride": 2,
                 "padding": 1,
-                "activation": "Tanh",
-                "batch_normalization": false,
-                "dropout": false,
-                "weight_initialization": "xavier"
+                "activation": "Tanh"
             }
         ]
     },
@@ -76,54 +45,15 @@
                 "kernel_size": 4,
                 "stride": 2,
                 "padding": 1,
-                "activation": "LeakyReLU",
-                "batch_normalization": false,
-                "dropout": false,
-                "weight_initialization": "xavier"
-            },
-            {
-                "type": "conv",
-                "out_channels": 128,
-                "kernel_size": 4,
-                "stride": 2,
-                "padding": 1,
-                "activation": "LeakyReLU",
-                "batch_normalization": true,
-                "dropout": false,
-                "weight_initialization": "xavier"
-            },
-            {
-                "type": "conv",
-                "out_channels": 256,
-                "kernel_size": 4,
-                "stride": 2,
-                "padding": 1,
-                "activation": "LeakyReLU",
-                "batch_normalization": true,
-                "dropout": false,
-                "weight_initialization": "xavier"
-            },
-            {
-                "type": "conv",
-                "out_channels": 512,
-                "kernel_size": 3,
-                "stride": 2,
-                "padding": 1,
-                "activation": "LeakyReLU",
-                "batch_normalization": false,
-                "dropout": false,
-                "weight_initialization": "xavier"
+                "activation": "LeakyReLU"
             },
             {
                 "type": "conv",
                 "out_channels": 1,
-                "kernel_size": 2,
-                "stride": 1,
-                "padding": 0,
-                "activation": "Sigmoid",
-                "batch_normalization": false,
-                "dropout": false,
-                "weight_initialization": "xavier"
+                "kernel_size": 4,
+                "stride": 2,
+                "padding": 1,
+                "activation": "Sigmoid"
             }
         ]
     },

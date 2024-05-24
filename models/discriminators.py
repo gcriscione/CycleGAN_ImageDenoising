@@ -1,45 +1,25 @@
-import torch.nn as nn
+import tensorflow as tf
+from tensorflow.keras import layers
 
-class Discriminator(nn.Module):
+class Discriminator(tf.keras.Model):
     def __init__(self, config):
         super(Discriminator, self).__init__()
-        layers = []
-        input_channels = config['input_channels']
+        self.model = tf.keras.Sequential()
+        for layer_config in config["discriminator"]["layers"]:
+            if layer_config["type"] == "conv":
+                self.model.add(layers.Conv2D(
+                    filters=layer_config["out_channels"],
+                    kernel_size=layer_config["kernel_size"],
+                    strides=layer_config["stride"],
+                    padding='same'))
+                if layer_config["activation"] == "LeakyReLU":
+                    self.model.add(layers.LeakyReLU())
+                elif layer_config["activation"] == "Sigmoid":
+                    self.model.add(layers.Activation('sigmoid'))
 
-        for idx, layer_cfg in enumerate(config['layers']):
-            if layer_cfg['type'] == 'conv':
-                layers.append(
-                    nn.Conv2d(
-                        in_channels=input_channels,
-                        out_channels=layer_cfg['out_channels'],
-                        kernel_size=layer_cfg['kernel_size'],
-                        stride=layer_cfg['stride'],
-                        padding=layer_cfg['padding'],
-                        bias=False
-                    )
-                )
-                if layer_cfg['batch_normalization'] and idx < len(config['layers']) - 1:
-                    layers.append(nn.BatchNorm2d(layer_cfg['out_channels']))
-                if layer_cfg['activation'] == 'LeakyReLU':
-                    layers.append(nn.LeakyReLU(0.2, inplace=True))
-                elif layer_cfg['activation'] == 'Sigmoid':
-                    layers.append(nn.Sigmoid())
-                if layer_cfg['dropout']:
-                    layers.append(nn.Dropout(0.5))
-
-                input_channels = layer_cfg['out_channels']
-
-        self.model = nn.Sequential(*layers)
-        self._initialize_weights(config['layers'])
-
-    def _initialize_weights(self, layers_config):
-        for layer_cfg, layer in zip(layers_config, self.model):
-            if isinstance(layer, (nn.ConvTranspose2d, nn.Conv2d)):
-                if layer_cfg['weight_initialization'] == 'xavier':
-                    nn.init.xavier_normal_(layer.weight)
-
-    def forward(self, x):
-        return self.model(x)
+    def call(self, inputs, training=None):
+        return self.model(inputs)
     
-    def __str__(self):
-        return f"Discriminator Model:\n{self.model}"
+    def print_model(self):
+        self.model.build(input_shape=(None, 28, 28, 1))
+        self.model.summary()

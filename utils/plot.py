@@ -1,24 +1,27 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_images(original, noisy, denoised, n_images=5):
-    original = original.cpu().detach().numpy()
-    noisy = noisy.cpu().detach().numpy()
-    denoised = denoised.cpu().detach().numpy()
+def plot_images(original, noisy, reconstructed, num_images=5):
+    num_images = min(num_images, original.shape[0])
 
-    fig, axes = plt.subplots(nrows=n_images, ncols=3, figsize=(10, n_images * 3))
-    for i in range(n_images):
-        axes[i, 0].imshow(original[i, 0], cmap='gray')
-        axes[i, 0].set_title("Original")
-        axes[i, 0].axis('off')
+    plt.figure(figsize=(15, 5))
+    for i in range(num_images):
+        original_image = original[i].numpy().squeeze()
+        noisy_image = noisy[i].numpy().squeeze()
+        reconstructed_image = reconstructed[i].numpy().squeeze()
 
-        axes[i, 1].imshow(noisy[i, 0], cmap='gray')
-        axes[i, 1].set_title("Noisy")
-        axes[i, 1].axis('off')
-
-        axes[i, 2].imshow(denoised[i, 0], cmap='gray')
-        axes[i, 2].set_title("Denoised")
-        axes[i, 2].axis('off')
-
-    plt.tight_layout()
+        plt.subplot(3, num_images, i + 1)
+        plt.imshow(original_image, cmap='gray')
+        plt.title("Original")
+        plt.axis('off')
+        
+        plt.subplot(3, num_images, num_images + i + 1)
+        plt.imshow(noisy_image, cmap='gray')
+        plt.title("Noisy")
+        plt.axis('off')
+        
+        plt.subplot(3, num_images, 2 * num_images + i + 1)
+        plt.imshow(reconstructed_image, cmap='gray')
+        plt.title("Reconstructed")
+        plt.axis('off')
     plt.show()

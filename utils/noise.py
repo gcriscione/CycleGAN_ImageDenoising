@@ -1,41 +1,40 @@
-import torch
+import tensorflow as tf
 import numpy as np
 
 class NoiseAdder:
-    def __init__(self, noise_type='salt_and_pepper', noise_ratio=0.02):
-        self.noise_type = noise_type
-        self.noise_ratio = noise_ratio
+    def __init__(self, config):
+        self.noise_type = config["noise_adder"]["noise_type"]
+        self.salt_pepper_ratio = config["noise_adder"]["salt_pepper_ratio"]
+        self.gaussian_mean = config["noise_adder"]["gaussian_mean"]
+        self.gaussian_std = config["noise_adder"]["gaussian_std"]
 
-    # Adds noise to the images based on the specified noise type
     def add_noise(self, images):
-        if self.noise_type == 'salt_and_pepper':
-            return self._add_salt_pepper_noise(images)
-        elif self.noise_type == 'gaussian':
+        if self.noise_type == "salt_and_pepper":
+            return self._add_salt_and_pepper_noise(images)
+        elif self.noise_type == "gaussian":
             return self._add_gaussian_noise(images)
         else:
-            raise ValueError(f"Unsupported noise type: {self.noise_type}")
+            raise ValueError("Unsupported noise type")
 
-    # Adds salt and pepper noise to the images
-    def _add_salt_pepper_noise(self, images):
-        # Clone the original images to keep them unchanged
-        noisy_images = images.clone()
-        
-        # Generate random number and coordinates for 'salt' pixels
-        num_salt = int(self.noise_ratio * images.numel())
-        coords = [np.random.randint(0, i, num_salt) for i in images.shape]
-        noisy_images[coords[0], coords[1], coords[2], coords[3]] = 1
+    def _add_salt_and_pepper_noise(self, images):
+        images = images.numpy()  # Convert to numpy array
+        noisy_images = images.copy()
+        num_salt = np.ceil(self.salt_pepper_ratio * images.size * 0.5)
+        num_pepper = np.ceil(self.salt_pepper_ratio * images.size * 0.5)
 
-        # Generate random number and coordinates for 'pepper' pixels
-        num_pepper = int(self.noise_ratio * images.numel())
-        coords = [np.random.randint(0, i, num_pepper) for i in images.shape]
-        noisy_images[coords[0], coords[1], coords[2], coords[3]] = 0
+        # Add Salt noise
+        coords = [np.random.randint(0, i, int(num_salt)) for i in images.shape]
+        noisy_images[coords[0], coords[1], coords[2]] = 1
 
-        return noisy_images
+        # Add Pepper noise
+        coords = [np.random.randint(0, i, int(num_pepper)) for i in images.shape]
+        noisy_images[coords[0], coords[1], coords[2]] = 0
 
-    # Adds Gaussian noise to the images
+        return tf.convert_to_tensor(noisy_images)  # Convert back to tensor
+
     def _add_gaussian_noise(self, images):
-        mean = 0                    # Mean of the Gaussian noise
-        std = self.noise_ratio      # Standard deviation of the Gaussian noise
-        gaussian_noise = torch.randn(images.size()) * std + mean    # Generate Gaussian noise
-        noisy_images = images + gaussian_noise                      # Add Gaussian noise to the images
-        return noisy_images
+        mean = self.gaussian_mean
+        std = self.gaussian_std
+        gaussian_noise = np.random.normal(mean, std, images.shape)
+        noisy_images = images + gaussian_noise
+        return tf.convert_to_tensor(np.clip(noisy_images, -1.0, 1.0))

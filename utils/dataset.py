@@ -1,19 +1,14 @@
-from torchvision import datasets, transforms
-from torch.utils.data import DataLoader
+import tensorflow as tf
+from tensorflow.keras.datasets import mnist
 
-
-# Class to create a DataLoader for the MNIST dataset
 class MNISTDataLoader:
-    def __init__(self, batch_size=1, data_path='./data'):
-        self.batch_size = batch_size
-        self.data_path = data_path
-        self.transform = transforms.Compose([
-            transforms.ToTensor(),                  # Convert the image to PyTorch tensor
-            transforms.Normalize((0.5,), (0.5,))    # Normalize the images with mean 0.5 and std 0.5
-        ])
+    def __init__(self, config):
+        self.batch_size = config["general"]["batch_size"]
+        (self.train_images, _), (self.test_images, _) = mnist.load_data()
+        self.train_images = (self.train_images.astype('float32') - 127.5) / 127.5
+        self.train_images = tf.expand_dims(self.train_images, axis=-1)
 
-    # Creates and returns a DataLoader for the MNIST training dataset
-    def get_dataloader(self):
-        train_dataset = datasets.MNIST(root=self.data_path, train=True, transform=self.transform, download=True)
-        train_loader = DataLoader(dataset=train_dataset, batch_size=self.batch_size, shuffle=True)
-        return train_loader
+    def get_train_data(self):
+        train_dataset = tf.data.Dataset.from_tensor_slices(self.train_images)
+        train_dataset = train_dataset.shuffle(buffer_size=1024).batch(self.batch_size).prefetch(tf.data.AUTOTUNE)
+        return train_dataset
