@@ -1,9 +1,9 @@
 import tensorflow as tf
-from models import Generator, Discriminator, Losses
-from utils import MNISTDataLoader, NoiseAdder, plot_images, stats
-from config.config_file import config
-import json
 import logging
+import json
+from models import Generator, Discriminator, Losses
+from utils import MNISTDataLoader, NoiseAdder, plot_images, stats, create_checkpoint_manager, test_model
+from config.config_file import config
 
 CONFIGURATION_FILE = "result/setup/config.json"
 MODEL_FILE = "result/setup/models.txt"
@@ -27,15 +27,8 @@ def enable_memory_growth():
         except RuntimeError as e:
             print(e)
 
-# Print configuration details
-def print_config(obj):
-    for key, value in obj.items():
-        print(f"{key}: {value}")
-
 # Initialize models, optimizers, and other components
 def initialize_components(config):
-    data_loader = MNISTDataLoader(config)
-    train_loader = data_loader.get_train_data()
     G1 = Generator(config)
     G2 = Generator(config)
     D1 = Discriminator(config)
@@ -60,11 +53,11 @@ def initialize_components(config):
     noise_adder = NoiseAdder(config)
     losses = Losses(config)
 
-    return train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses
+    return G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses
 
 # Perform training for one epoch
-def train_one_epoch(config, epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses):
-    for i, images in enumerate(train_loader):
+def train_one_epoch(config, epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses, checkpoint_manager):
+    for i, (images, _) in enumerate(train_loader):
         noisy_images = noise_adder.add_noise(images)
 
         # Ensure images have 4 dimensions
@@ -108,36 +101,77 @@ def train_one_epoch(config, epoch, train_loader, G1, G2, D1, D2, optimizer_G, op
 
         print(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G))
         training_logger.info(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G))
-        if (i + 1) % 1000 == 0:
+        if (i + 1) % 10 == 0:
+            # Save checkpoint at the end of each epoch
+            checkpoint_manager.save()
+            print(f"Checkpoint saved at epoch {epoch+1}, iteration {i+1}.")
             plot_images(images, noisy_images, reconstructed_images_G1, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], (epoch+1), (i+1), config['general']['seed'])
 
 # Main training loop
 def train():
     enable_memory_growth()
+    
+    data_loader = MNISTDataLoader(config)
+    train_loader = data_loader.get_train_data()
+    test_data = data_loader.get_test_data()
 
-    try:
-        with open(CONFIGURATION_FILE, 'w') as json_file:
-            json.dump(config, json_file, indent=4)
-        print(f"Configurazione salvata in {CONFIGURATION_FILE}")
-    except Exception as e:
-        print(f"Errore nel salvataggio dell'oggetto in {CONFIGURATION_FILE}: {e}")
+    G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses = initialize_components(config)
 
-    train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses = initialize_components(config)
+    model = {'generator1': G1, 'generator2': G2, 'discriminator1': D1, 'discriminator2': D2}
+    optimizer = {'generator': optimizer_G, 'discriminator': [optimizer_D1, optimizer_D2]}
 
-    try:
-        with open(MODEL_FILE, 'w') as file:
-            file.write(f"\t\tGENERATOR 1\n{G1}\n\n")
-            file.write(f"\t\tGENERATOR 2\n{G2}\n\n")
-            file.write(f"\t\tDISCRIMINATOR 1\n{D1}\n\n")
-            file.write(f"\t\tDISCRIMINATOR 2\n{D2}\n\n")
-        print(f"Configurazione modelli salvata in {MODEL_FILE}")
-    except Exception as e:
-        print(f"Errore nel salvataggio in {MODEL_FILE}: {e}")
+    checkpoint, checkpoint_manager = create_checkpoint_manager(model, optimizer)
 
-    training_logger.info("TRAINING:")
-    print("\n\t\tTRAINING:")
-    for epoch in range(config['general']['num_epochs']):
-        train_one_epoch(config, epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses)
+    # Restore latest checkpoint if it exists
+    mode = config['general']['mode']
+    if mode == 'train':
+        # Restore latest checkpoint if it exists
+        if checkpoint_manager.latest_checkpoint:
+            checkpoint.restore(checkpoint_manager.latest_checkpoint)
+            print(f"Restored from {checkpoint_manager.latest_checkpoint}")
+        else:
+            try:
+                with open(CONFIGURATION_FILE, 'w') as json_file:
+                    json.dump(config, json_file, indent=4)
+                print(f"Configurazione salvata in {CONFIGURATION_FILE}")
+            except Exception as e:
+                print(f"Errore nel salvataggio dell'oggetto in {CONFIGURATION_FILE}: {e}")
+    
+            try:
+                with open(MODEL_FILE, 'w') as file:
+                    file.write(f"\t\tGENERATOR 1\n{G1}\n\n")
+                    file.write(f"\t\tGENERATOR 2\n{G2}\n\n")
+                    file.write(f"\t\tDISCRIMINATOR 1\n{D1}\n\n")
+                    file.write(f"\t\tDISCRIMINATOR 2\n{D2}\n\n")
+                print(f"Configurazione modelli salvata in {MODEL_FILE}")
+            except Exception as e:
+                print(f"Errore nel salvataggio in {MODEL_FILE}: {e}")
+
+            print("Starting from scratch.")
+
+
+        training_logger.info("TRAINING:")
+        print("\n\t\tTRAINING:")
+        for epoch in range(config['general']['num_epochs']):
+            train_one_epoch(config, epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses, checkpoint_manager)
+        
+        # Test the model after training
+        test_model(G1, noise_adder, test_data)
+
+    elif mode == 'test':
+        # Restore latest checkpoint for testing
+        if checkpoint_manager.latest_checkpoint:
+            checkpoint.restore(checkpoint_manager.latest_checkpoint)
+            print(f"Restored from {checkpoint_manager.latest_checkpoint} for testing.")
+            test_model(G1, noise_adder, test_data)
+        else:
+            print("No checkpoint found. Cannot test the model.")
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description='CycleGAN Image Denoising')
+    parser.add_argument('--mode', type=str, default='train', help='Mode to run: train or test')
+    args = parser.parse_args()
+
     train()

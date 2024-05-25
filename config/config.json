@@ -8,6 +8,10 @@
         "seed": 42,
         "show_plots": false,
         "save_plots": true,
+        "img_size": 28,
+        "training_size": 1000,
+        "test_size": 10,
+        "mode": "train",
         "data_path": "./data"
     },
     "generator": {

@@ -33,4 +33,4 @@ if __name__ == "__main__":
         create_result_directories(result_path)
 
     download_mnist(data_path)
-    train(data_path=data_path)
+    train()
