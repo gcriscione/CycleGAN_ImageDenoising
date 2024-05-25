@@ -12,3 +12,6 @@ data/MNIST
 
 // python cache
 __pycache__/
+
+// result
+result/

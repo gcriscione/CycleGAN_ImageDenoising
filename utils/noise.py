@@ -8,14 +8,22 @@ class NoiseAdder:
         self.gaussian_mean = config["noise_adder"]["gaussian_mean"]
         self.gaussian_std = config["noise_adder"]["gaussian_std"]
 
+        # Dictionary of noise functions
+        self.noise_functions = {
+            "salt_and_pepper": self._add_salt_and_pepper_noise,
+            "gaussian": self._add_gaussian_noise,
+            "speckle": self._add_speckle_noise,
+            "poisson": self._add_poisson_noise
+        }
+
+    # Add noise to the input images based on the specified noise type.
     def add_noise(self, images):
-        if self.noise_type == "salt_and_pepper":
-            return self._add_salt_and_pepper_noise(images)
-        elif self.noise_type == "gaussian":
-            return self._add_gaussian_noise(images)
+        if self.noise_type in self.noise_functions:
+            return self.noise_functions[self.noise_type](images)
         else:
             raise ValueError("Unsupported noise type")
 
+    # Add salt and pepper noise to the images.
     def _add_salt_and_pepper_noise(self, images):
         images = images.numpy()  # Convert to numpy array
         noisy_images = images.copy()
@@ -32,9 +40,21 @@ class NoiseAdder:
 
         return tf.convert_to_tensor(noisy_images)  # Convert back to tensor
 
+    # Add Gaussian noise to the images
     def _add_gaussian_noise(self, images):
         mean = self.gaussian_mean
         std = self.gaussian_std
         gaussian_noise = np.random.normal(mean, std, images.shape)
         noisy_images = images + gaussian_noise
+        return tf.convert_to_tensor(np.clip(noisy_images, -1.0, 1.0))
+    
+    # Add speckle noise to the images.
+    def _add_speckle_noise(self, images):
+        noise = np.random.randn(*images.shape)
+        noisy_images = images + images * noise
+        return tf.convert_to_tensor(np.clip(noisy_images, -1.0, 1.0))
+
+    # Add Poisson noise to the images.
+    def _add_poisson_noise(self, images):
+        noisy_images = np.random.poisson(images * 255.0) / 255.0
         return tf.convert_to_tensor(np.clip(noisy_images, -1.0, 1.0))

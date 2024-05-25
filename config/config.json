@@ -5,6 +5,9 @@
         "learning_rate": 0.0002,
         "beta1": 0.5,
         "beta2": 0.999,
+        "seed": 42,
+        "show_plots": false,
+        "save_plots": true,
         "data_path": "./data"
     },
     "generator": {
