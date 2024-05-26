@@ -2,7 +2,7 @@ import tensorflow as tf
 import logging
 import json
 from models import Generator, Discriminator, Losses
-from utils import MNISTDataLoader, NoiseAdder, plot_images, stats, create_checkpoint_manager, test_model
+from utils import MNISTDataLoader, NoiseAdder, plot_images, stats, create_checkpoint_manager, validate_model, test_model
 from config.config_file import config
 
 CONFIGURATION_FILE = "result/setup/config.json"
@@ -56,7 +56,7 @@ def initialize_components(config):
     return G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses
 
 # Perform training for one epoch
-def train_one_epoch(config, epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses, checkpoint_manager):
+def train_one_epoch(epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses):
     for i, (images, _) in enumerate(train_loader):
         noisy_images = noise_adder.add_noise(images)
 
@@ -101,11 +101,8 @@ def train_one_epoch(config, epoch, train_loader, G1, G2, D1, D2, optimizer_G, op
 
         print(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G))
         training_logger.info(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G))
-        if (i + 1) % 10 == 0:
-            # Save checkpoint at the end of each epoch
-            checkpoint_manager.save()
-            print(f"Checkpoint saved at epoch {epoch+1}, iteration {i+1}.")
-            plot_images(images, noisy_images, reconstructed_images_G1, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], (epoch+1), (i+1), config['general']['seed'])
+        # if (i + 1) % 500 == 0:
+        #     plot_images(images, noisy_images, reconstructed_images_G1, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], (epoch+1), config['general']['seed'])
 
 # Main training loop
 def train():
@@ -113,7 +110,8 @@ def train():
     
     data_loader = MNISTDataLoader(config)
     train_loader = data_loader.get_train_data()
-    test_data = data_loader.get_test_data()
+    val_loader = data_loader.get_validation_data()
+    test_loader = data_loader.get_test_data()
 
     G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses = initialize_components(config)
 
@@ -153,17 +151,23 @@ def train():
         training_logger.info("TRAINING:")
         print("\n\t\tTRAINING:")
         for epoch in range(config['general']['num_epochs']):
-            train_one_epoch(config, epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses, checkpoint_manager)
+            train_one_epoch(epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses)
+
+            validate_model(epoch, G1, G2, noise_adder, val_loader, losses, training_logger)
+
+            # Save checkpoint at the end of each epoch
+            checkpoint_manager.save()
+            print(f"Checkpoint saved at epoch {epoch+1}")
         
         # Test the model after training
-        test_model(G1, noise_adder, test_data)
+        test_model(G1, noise_adder, test_loader, training_logger)
 
     elif mode == 'test':
         # Restore latest checkpoint for testing
         if checkpoint_manager.latest_checkpoint:
             checkpoint.restore(checkpoint_manager.latest_checkpoint)
             print(f"Restored from {checkpoint_manager.latest_checkpoint} for testing.")
-            test_model(G1, noise_adder, test_data)
+            test_model(G1, noise_adder, test_loader)
         else:
             print("No checkpoint found. Cannot test the model.")
 

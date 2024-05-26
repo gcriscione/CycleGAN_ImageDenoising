@@ -1,8 +1,8 @@
 {
     "general": {
         "batch_size": 1,
-        "num_epochs": 10,
-        "learning_rate": 0.0002,
+        "num_epochs": 20,
+        "learning_rate": 0.002,
         "beta1": 0.5,
         "beta2": 0.999,
         "seed": 42,
@@ -10,36 +10,44 @@
         "save_plots": true,
         "img_size": 28,
         "training_size": 1000,
-        "test_size": 10,
+        "validation_size": 200,
+        "test_size": 200,
         "mode": "train",
         "data_path": "./data"
     },
     "generator": {
-        "input_dim": 1,
+        "input_dim": 100,
         "layers": [
             {
                 "type": "conv_transpose",
-                "out_channels": 32,
-                "kernel_size": 4,
-                "stride": 2,
-                "padding": 1,
-                "activation": "ReLU"
+                "out_channels": 128,
+                "kernel_size": 7,
+                "stride": 1,
+                "activation": "ReLU",
+                "batch_norm": true
+            },
+            {
+                "type": "residual_block",
+                "out_channels": 128,
+                "kernel_size": 3,
+                "num_blocks": 7,
+                "batch_norm": true
             },
             {
                 "type": "conv_transpose",
-                "out_channels": 16,
+                "out_channels": 64,
                 "kernel_size": 4,
                 "stride": 2,
-                "padding": 1,
-                "activation": "ReLU"
+                "activation": "ReLU",
+                "batch_norm": true
             },
             {
                 "type": "conv_transpose",
                 "out_channels": 1,
                 "kernel_size": 4,
                 "stride": 2,
-                "padding": 1,
-                "activation": "Tanh"
+                "activation": "Tanh",
+                "batch_norm": false
             }
         ]
     },
@@ -51,28 +59,45 @@
                 "out_channels": 64,
                 "kernel_size": 4,
                 "stride": 2,
-                "padding": 1,
-                "activation": "LeakyReLU"
+                "activation": "LeakyReLU",
+                "batch_norm": true,
+                "dropout": 0.5
+            },
+            {
+                "type": "residual_block",
+                "out_channels": 64,
+                "kernel_size": 3,
+                "num_blocks": 7,
+                "batch_norm": true
+            },
+            {
+                "type": "conv",
+                "out_channels": 128,
+                "kernel_size": 4,
+                "stride": 2,
+                "activation": "LeakyReLU",
+                "batch_norm": true,
+                "dropout": 0.5
             },
             {
                 "type": "conv",
                 "out_channels": 1,
-                "kernel_size": 4,
-                "stride": 2,
-                "padding": 1,
-                "activation": "Sigmoid"
+                "kernel_size": 3,
+                "stride": 1,
+                "activation": "Sigmoid",
+                "batch_norm": false
             }
         ]
     },
     "noise_adder": {
         "noise_type": "salt_and_pepper",
-        "salt_pepper_ratio": 0.02,
+        "salt_pepper_ratio": 0.20,
         "gaussian_mean": 0,
         "gaussian_std": 0.02
     },
     "training": {
         "loss_function": "BCE",
         "optimizer": "Adam",
-        "gradient_clipping": false
+        "gradient_clipping": true
     }
 }

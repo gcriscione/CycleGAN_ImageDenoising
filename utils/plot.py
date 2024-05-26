@@ -4,7 +4,7 @@ import os
 SAVE_DIR = "result/plots"
 
 # Plot original, noisy, and reconstructed images. Optionally save the plots to a directory.
-def plot_images(original, noisy, reconstructed, num_images=5, show=True, save=False, epoch=None, batch=None, model_seed=None):
+def plot_images(original, noisy, reconstructed, num_images=5, show=True, save=False, epoch=None, extends_name=None, model_seed=None):
     num_images = min(num_images, original.shape[0])
     
     # Create the directory if it does not exist
@@ -39,8 +39,8 @@ def plot_images(original, noisy, reconstructed, num_images=5, show=True, save=Fa
             file_name += f"_seed{model_seed}"
         if epoch is not None:
             file_name += f"_epoch{epoch}"
-        if batch is not None:
-            file_name += f"_batch{batch}"
+        if extends_name is not None:
+            file_name += f"_{extends_name}"
         file_name += ".png"
         plt.savefig(os.path.join(SAVE_DIR, file_name))
     

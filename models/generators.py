@@ -8,6 +8,23 @@ import logging
 logging.basicConfig(filename='result/logs/models.log', level=logging.INFO, filemode='w')
 logger = logging.getLogger(__name__)
 
+class ResNetBlock(tf.keras.layers.Layer):
+    def __init__(self, filters, kernel_size=3):
+        super(ResNetBlock, self).__init__()
+        self.conv1 = tf.keras.layers.Conv2D(filters, kernel_size, padding='same')
+        self.bn1 = tf.keras.layers.BatchNormalization()
+        self.relu = tf.keras.layers.ReLU()
+        self.conv2 = tf.keras.layers.Conv2D(filters, kernel_size, padding='same')
+        self.bn2 = tf.keras.layers.BatchNormalization()
+
+    def call(self, inputs):
+        x = self.conv1(inputs)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x += inputs
+        return self.relu(x)
 
 class Generator(tf.keras.Model):
     def __init__(self, config):
@@ -21,9 +38,11 @@ class Generator(tf.keras.Model):
         # Create the generator model
         self.model = tf.keras.Sequential()
         for layer_config in config["generator"]["layers"]:
-            self.add_layer(layer_config)
+            if layer_config["type"] == "residual_block":
+                self.add_residual_blocks(layer_config)
+            else:
+                self.add_layer(layer_config)
 
-    # Add a layer to the generator model based on the configuration.
     def add_layer(self, layer_config):
         if layer_config["type"] == "conv_transpose":
             self.model.add(layers.Conv2DTranspose(
@@ -51,15 +70,20 @@ class Generator(tf.keras.Model):
             self.model.add(layers.Dropout(layer_config["dropout"]))
             logger.info(f"Added Dropout with rate {layer_config['dropout']}")
 
+    def add_residual_blocks(self, layer_config):
+        num_blocks = layer_config.get("num_blocks", 1)
+        filters = layer_config["out_channels"]
+        kernel_size = layer_config["kernel_size"]
 
-    # Forward pass for the generator.
+        for _ in range(num_blocks):
+            self.model.add(ResNetBlock(filters=filters, kernel_size=kernel_size))
+            logger.info(f"Added ResNetBlock with {filters} filters")
+
     def call(self, inputs, training=None):
         output = self.model(inputs)
-        # Ensure output has the same size as the input
         output = tf.image.resize(output, [28, 28])
         return output
 
-    # Print the model summary.
     def __str__(self):
         self.model.build(input_shape=(None, 28, 28, 1))
         with io.StringIO() as buf, redirect_stdout(buf):
