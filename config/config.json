@@ -42,6 +42,13 @@
                 "batch_norm": true
             },
             {
+                "type": "residual_block",
+                "out_channels": 32,
+                "kernel_size": 3,
+                "num_blocks": 4,
+                "batch_norm": true
+            },
+            {
                 "type": "conv_transpose",
                 "out_channels": 32,
                 "kernel_size": 4,
@@ -54,7 +61,7 @@
                 "out_channels": 1,
                 "kernel_size": 3,
                 "stride": 1,
-                "activation": "Tanh",
+                "activation": "Sigmoid",
                 "batch_norm": false
             }
         ]
@@ -64,7 +71,7 @@
         "layers": [
             {
                 "type": "conv",
-                "out_channels": 32,
+                "out_channels": 64,
                 "kernel_size": 4,
                 "stride": 2,
                 "activation": "LeakyReLU",
@@ -73,14 +80,14 @@
             },
             {
                 "type": "residual_block",
-                "out_channels": 32,
+                "out_channels": 64,
                 "kernel_size": 3,
                 "num_blocks": 8,
                 "batch_norm": true
             },
             {
                 "type": "conv",
-                "out_channels": 64,
+                "out_channels": 128,
                 "kernel_size": 4,
                 "stride": 2,
                 "activation": "LeakyReLU",
@@ -89,7 +96,7 @@
             },
             {
                 "type": "residual_block",
-                "out_channels": 64,
+                "out_channels": 128,
                 "kernel_size": 3,
                 "num_blocks": 4,
                 "batch_norm": true

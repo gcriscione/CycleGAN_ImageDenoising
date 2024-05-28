@@ -16,6 +16,13 @@ class ResNetBlock(tf.keras.layers.Layer):
         self.relu = tf.keras.layers.ReLU()
         self.conv2 = tf.keras.layers.Conv2D(filters, kernel_size, padding='same')
         self.bn2 = tf.keras.layers.BatchNormalization()
+        
+        self.match_dims = None
+        self.filters = filters
+
+    def build(self, input_shape):
+        if input_shape[-1] != self.filters:
+            self.match_dims = tf.keras.layers.Conv2D(self.filters, 1, padding='same')
 
     def call(self, inputs):
         x = self.conv1(inputs)
@@ -23,6 +30,10 @@ class ResNetBlock(tf.keras.layers.Layer):
         x = self.relu(x)
         x = self.conv2(x)
         x = self.bn2(x)
+        
+        if self.match_dims:
+            inputs = self.match_dims(inputs)
+        
         x += inputs
         return self.relu(x)
 
@@ -44,7 +55,14 @@ class Generator(tf.keras.Model):
                 self.add_layer(layer_config)
 
     def add_layer(self, layer_config):
-        if layer_config["type"] == "conv_transpose":
+        if layer_config["type"] == "conv":
+            self.model.add(layers.Conv2D(
+                filters=layer_config["out_channels"],
+                kernel_size=layer_config["kernel_size"],
+                strides=layer_config["stride"],
+                padding='same'))
+            logger.info(f"Added Conv2D layer with {layer_config['out_channels']} filters")
+        elif layer_config["type"] == "conv_transpose":
             self.model.add(layers.Conv2DTranspose(
                 filters=layer_config["out_channels"],
                 kernel_size=layer_config["kernel_size"],
@@ -61,6 +79,9 @@ class Generator(tf.keras.Model):
             elif layer_config["activation"] == "Tanh":
                 self.model.add(layers.Activation('tanh'))
                 logger.info("Added Tanh activation")
+            elif layer_config["activation"] == "Sigmoid":
+                self.model.add(layers.Activation('sigmoid'))
+                logger.info("Added Sigmoid activation")
 
         if "batch_norm" in layer_config and layer_config["batch_norm"]:
             self.model.add(layers.BatchNormalization())
