@@ -99,10 +99,11 @@ def train_one_epoch(epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_
         optimizer_D2.apply_gradients(zip(gradients_D2, D2.trainable_variables))
         optimizer_G.apply_gradients(zip(gradients_G1 + gradients_G2, G1.trainable_variables + G2.trainable_variables))
 
-        print(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G))
         training_logger.info(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G))
-        # if (i + 1) % 500 == 0:
-        #     plot_images(images, noisy_images, reconstructed_images_G1, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], (epoch+1), config['general']['seed'])
+        if (i + 1) % 10 == 0 or (i==0):
+            print(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G))
+        if (i + 1) % 500 == 0:
+            plot_images(images, noisy_images, reconstructed_images_G1, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], (epoch+1), f'training[{i+1}]', config['general']['seed'])
 
 # Main training loop
 def train():

@@ -1,8 +1,8 @@
 {
     "general": {
         "batch_size": 1,
-        "num_epochs": 20,
-        "learning_rate": 0.002,
+        "num_epochs": 10,
+        "learning_rate": 0.0001,
         "beta1": 0.5,
         "beta2": 0.999,
         "seed": 42,
@@ -16,11 +16,11 @@
         "data_path": "./data"
     },
     "generator": {
-        "input_dim": 100,
+        "input_dim": [28, 28, 1],
         "layers": [
             {
-                "type": "conv_transpose",
-                "out_channels": 128,
+                "type": "conv",
+                "out_channels": 64,
                 "kernel_size": 7,
                 "stride": 1,
                 "activation": "ReLU",
@@ -28,9 +28,9 @@
             },
             {
                 "type": "residual_block",
-                "out_channels": 128,
+                "out_channels": 64,
                 "kernel_size": 3,
-                "num_blocks": 7,
+                "num_blocks": 8,
                 "batch_norm": true
             },
             {
@@ -43,9 +43,17 @@
             },
             {
                 "type": "conv_transpose",
-                "out_channels": 1,
+                "out_channels": 32,
                 "kernel_size": 4,
                 "stride": 2,
+                "activation": "ReLU",
+                "batch_norm": true
+            },
+            {
+                "type": "conv",
+                "out_channels": 1,
+                "kernel_size": 3,
+                "stride": 1,
                 "activation": "Tanh",
                 "batch_norm": false
             }
@@ -56,6 +64,22 @@
         "layers": [
             {
                 "type": "conv",
+                "out_channels": 32,
+                "kernel_size": 4,
+                "stride": 2,
+                "activation": "LeakyReLU",
+                "batch_norm": true,
+                "dropout": 0.5
+            },
+            {
+                "type": "residual_block",
+                "out_channels": 32,
+                "kernel_size": 3,
+                "num_blocks": 8,
+                "batch_norm": true
+            },
+            {
+                "type": "conv",
                 "out_channels": 64,
                 "kernel_size": 4,
                 "stride": 2,
@@ -67,17 +91,8 @@
                 "type": "residual_block",
                 "out_channels": 64,
                 "kernel_size": 3,
-                "num_blocks": 7,
+                "num_blocks": 4,
                 "batch_norm": true
-            },
-            {
-                "type": "conv",
-                "out_channels": 128,
-                "kernel_size": 4,
-                "stride": 2,
-                "activation": "LeakyReLU",
-                "batch_norm": true,
-                "dropout": 0.5
             },
             {
                 "type": "conv",
@@ -91,7 +106,7 @@
     },
     "noise_adder": {
         "noise_type": "salt_and_pepper",
-        "salt_pepper_ratio": 0.20,
+        "salt_pepper_ratio": 0.2,
         "gaussian_mean": 0,
         "gaussian_std": 0.02
     },
