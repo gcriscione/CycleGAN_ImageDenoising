@@ -25,7 +25,7 @@ def validate_model(epoch, generator1, generator2, noise_adder, val_loader, losse
 
         # Plot images for validation
         if i % 50 == 0:
-            plot_images(images, noisy_images, reconstructed_images_G1, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], (epoch+1), f'validate[{i}]', config['general']['seed'])
+            plot_images(images, noisy_images, reconstructed_images_G1, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], (epoch+1), f'validate[{i}]', config['training']['seed'])
 
     average_loss = total_loss_G / batch_count
     logger.info(f"Validation Loss - Epoch: {epoch+1}, Average Loss: {average_loss}")

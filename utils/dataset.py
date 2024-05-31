@@ -4,10 +4,10 @@ import numpy as np
 class MNISTDataLoader:
     def __init__(self, config):
         self.config = config
-        self.training_size = config['general'].get('training_size', None)
-        self.validation_size = config['general'].get('validation_size', None)
-        self.test_size = config['general'].get('test_size', None)
-        self.img_size = config['general'].get('img_size', 28)
+        self.training_size = config['training'].get('training_size', None)
+        self.validation_size = config['training'].get('validation_size', None)
+        self.test_size = config['training'].get('test_size', None)
+        self.img_size = config['training'].get('img_size', 28)
         self.num_classes = 10  # Number of digit classes (0-9)
         
         # Load dataset once
@@ -46,7 +46,7 @@ class MNISTDataLoader:
             x_train, y_train = self.x_train, self.y_train
 
         train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-        train_dataset = train_dataset.shuffle(len(y_train)).batch(self.config['general']['batch_size']).prefetch(tf.data.experimental.AUTOTUNE)
+        train_dataset = train_dataset.shuffle(len(y_train)).batch(self.config['training']['batch_size']).prefetch(tf.data.experimental.AUTOTUNE)
         return train_dataset
     
     def get_validation_data(self):
@@ -57,7 +57,7 @@ class MNISTDataLoader:
             x_val, y_val = self.x_val, self.y_val
         
         validation_dataset = tf.data.Dataset.from_tensor_slices((x_val, y_val))
-        validation_dataset = validation_dataset.batch(self.config['general']['batch_size']).prefetch(tf.data.experimental.AUTOTUNE)
+        validation_dataset = validation_dataset.batch(self.config['training']['batch_size']).prefetch(tf.data.experimental.AUTOTUNE)
         return validation_dataset
     
     def get_test_data(self):
@@ -68,5 +68,5 @@ class MNISTDataLoader:
             x_test, y_test = self.x_test, self.y_test
         
         test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
-        test_dataset = test_dataset.batch(self.config['general']['batch_size']).prefetch(tf.data.experimental.AUTOTUNE)
+        test_dataset = test_dataset.batch(self.config['training']['batch_size']).prefetch(tf.data.experimental.AUTOTUNE)
         return test_dataset

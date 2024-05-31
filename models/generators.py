@@ -42,7 +42,7 @@ class Generator(tf.keras.Model):
         super(Generator, self).__init__()
 
         # Set seed for reproducibility
-        seed = config['general'].get('seed', -1)
+        seed = config['training'].get('seed', -1)
         if seed is not None and seed != -1:
             tf.random.set_seed(seed)
 

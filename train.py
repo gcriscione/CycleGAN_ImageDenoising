@@ -34,29 +34,34 @@ def initialize_components(config):
     D1 = Discriminator(config)
     D2 = Discriminator(config)
 
-    optimizer_G = tf.keras.optimizers.Adam(
-        learning_rate=config['general']['learning_rate'], 
-        beta_1=config['general']['beta1'], 
-        beta_2=config['general']['beta2']
+    optimizer_G1 = tf.keras.optimizers.Adam(
+        learning_rate=config['training']['generator_learning_rate'], 
+        beta_1=config['training']['beta1'], 
+        beta_2=config['training']['beta2']
+    )
+    optimizer_G2 = tf.keras.optimizers.Adam(
+        learning_rate=config['training']['generator_learning_rate'], 
+        beta_1=config['training']['beta1'], 
+        beta_2=config['training']['beta2']
     )
     optimizer_D1 = tf.keras.optimizers.Adam(
-        learning_rate=config['general']['learning_rate'], 
-        beta_1=config['general']['beta1'], 
-        beta_2=config['general']['beta2']
+        learning_rate=config['training']['discriminator_learning_rate'], 
+        beta_1=config['training']['beta1'], 
+        beta_2=config['training']['beta2']
     )
     optimizer_D2 = tf.keras.optimizers.Adam(
-        learning_rate=config['general']['learning_rate'], 
-        beta_1=config['general']['beta1'], 
-        beta_2=config['general']['beta2']
+        learning_rate=config['training']['discriminator_learning_rate'], 
+        beta_1=config['training']['beta1'], 
+        beta_2=config['training']['beta2']
     )
 
     noise_adder = NoiseAdder(config)
     losses = Losses(config)
 
-    return G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses
+    return G1, G2, D1, D2, optimizer_G1, optimizer_G2, optimizer_D1, optimizer_D2, noise_adder, losses
 
 # Perform training for one epoch
-def train_one_epoch(epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses):
+def train_one_epoch(epoch, train_loader, G1, G2, D1, D2, optimizer_G1, optimizer_G2, optimizer_D1, optimizer_D2, noise_adder, losses):
     for i, (images, _) in enumerate(train_loader):
         noisy_images = noise_adder.add_noise(images)
 
@@ -66,7 +71,7 @@ def train_one_epoch(epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_
         if len(noisy_images.shape) == 3:
             noisy_images = tf.expand_dims(noisy_images, axis=-1)
 
-        with tf.GradientTape(persistent=True) as tape:
+        with tf.GradientTape() as tape_D1, tf.GradientTape() as tape_D2, tf.GradientTape() as tape_G1, tf.GradientTape() as tape_G2:
             fake_images_G2 = G2(noisy_images, training=True)
             fake_images_G1 = G1(images, training=True)
 
@@ -88,22 +93,28 @@ def train_one_epoch(epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_
             loss_cycle_G1 = losses.cycle_consistency_loss(images, reconstructed_images_G1)
             loss_cycle_G2 = losses.cycle_consistency_loss(noisy_images, reconstructed_images_G2)
 
-            total_loss_G = loss_G1 + loss_G2 + loss_cycle_G1 + loss_cycle_G2
+            # Identity loss
+            identity_loss_G1 = losses.identity_loss(images, G1(images, training=True))
+            identity_loss_G2 = losses.identity_loss(noisy_images, G2(noisy_images, training=True))
 
-        gradients_D1 = tape.gradient(loss_D1, D1.trainable_variables)
-        gradients_D2 = tape.gradient(loss_D2, D2.trainable_variables)
-        gradients_G1 = tape.gradient(total_loss_G, G1.trainable_variables)
-        gradients_G2 = tape.gradient(total_loss_G, G2.trainable_variables)
+            total_loss_G1 = loss_G1 + loss_cycle_G1 + identity_loss_G1
+            total_loss_G2 = loss_G2 + loss_cycle_G2 + identity_loss_G2
+
+        gradients_D1 = tape_D1.gradient(loss_D1, D1.trainable_variables)
+        gradients_D2 = tape_D2.gradient(loss_D2, D2.trainable_variables)
+        gradients_G1 = tape_G1.gradient(total_loss_G1, G1.trainable_variables)
+        gradients_G2 = tape_G2.gradient(total_loss_G2, G2.trainable_variables)
 
         optimizer_D1.apply_gradients(zip(gradients_D1, D1.trainable_variables))
         optimizer_D2.apply_gradients(zip(gradients_D2, D2.trainable_variables))
-        optimizer_G.apply_gradients(zip(gradients_G1 + gradients_G2, G1.trainable_variables + G2.trainable_variables))
+        optimizer_G1.apply_gradients(zip(gradients_G1, G1.trainable_variables))
+        optimizer_G2.apply_gradients(zip(gradients_G2, G2.trainable_variables))
 
-        training_logger.info(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G))
-        if (i + 1) % 10 == 0 or (i==0):
-            print(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G))
+        training_logger.info(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G1 + total_loss_G2))
+        if (i + 1) % 10 == 0 or (i == 0):
+            print(stats((epoch+1), (i+1), loss_D1, loss_D2, total_loss_G1 + total_loss_G2))
         if (i + 1) % 500 == 0:
-            plot_images(images, noisy_images, reconstructed_images_G1, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], (epoch+1), f'training[{i+1}]', config['general']['seed'])
+            plot_images(images, noisy_images, reconstructed_images_G1, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], (epoch+1), f'training[{i+1}]', config['training']['seed'])
 
 # Main training loop
 def train():
@@ -114,17 +125,16 @@ def train():
     val_loader = data_loader.get_validation_data()
     test_loader = data_loader.get_test_data()
 
-    G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses = initialize_components(config)
+    G1, G2, D1, D2, optimizer_G1, optimizer_G2, optimizer_D1, optimizer_D2, noise_adder, losses = initialize_components(config)
 
     model = {'generator1': G1, 'generator2': G2, 'discriminator1': D1, 'discriminator2': D2}
-    optimizer = {'generator': optimizer_G, 'discriminator': [optimizer_D1, optimizer_D2]}
+    optimizer = {'generator1': optimizer_G1, 'generator2': optimizer_G2, 'discriminator1': optimizer_D1, 'discriminator2': optimizer_D2}
 
     checkpoint, checkpoint_manager = create_checkpoint_manager(model, optimizer)
 
     # Restore latest checkpoint if it exists
     mode = config['general']['mode']
     if mode == 'train':
-        # Restore latest checkpoint if it exists
         if checkpoint_manager.latest_checkpoint:
             checkpoint.restore(checkpoint_manager.latest_checkpoint)
             print(f"Restored from {checkpoint_manager.latest_checkpoint}")
@@ -148,11 +158,10 @@ def train():
 
             print("Starting from scratch.")
 
-
         training_logger.info("TRAINING:")
         print("\n\t\tTRAINING:")
-        for epoch in range(config['general']['num_epochs']):
-            train_one_epoch(epoch, train_loader, G1, G2, D1, D2, optimizer_G, optimizer_D1, optimizer_D2, noise_adder, losses)
+        for epoch in range(config['training']['num_epochs']):
+            train_one_epoch(epoch, train_loader, G1, G2, D1, D2, optimizer_G1, optimizer_G2, optimizer_D1, optimizer_D2, noise_adder, losses)
 
             validate_model(epoch, G1, G2, noise_adder, val_loader, losses, training_logger)
 
@@ -164,7 +173,6 @@ def train():
         test_model(G1, noise_adder, test_loader, training_logger)
 
     elif mode == 'test':
-        # Restore latest checkpoint for testing
         if checkpoint_manager.latest_checkpoint:
             checkpoint.restore(checkpoint_manager.latest_checkpoint)
             print(f"Restored from {checkpoint_manager.latest_checkpoint} for testing.")

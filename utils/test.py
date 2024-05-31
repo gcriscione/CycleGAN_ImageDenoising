@@ -22,7 +22,7 @@ def test_model(generator, noise_adder, test_data, logger):
 
         # Plot images for testing
         if i % 50 == 0:
-            plot_images(images, noisy_images, reconstructed_images, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], None, f'test[{i}]', config['general']['seed'])
+            plot_images(images, noisy_images, reconstructed_images, min(5, images.shape[0]), config['general']['show_plots'], config['general']['save_plots'], None, f'test[{i}]', config['training']['seed'])
         
     average_loss = total_loss / batch_count
     logger.info(f"Test Loss: {average_loss}")
